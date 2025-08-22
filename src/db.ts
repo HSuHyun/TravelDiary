@@ -1,37 +1,32 @@
-import Dexie, { type Table } from 'dexie';
-
-/**
- * IndexedDB storage for the Travel Diary application.
- *
- * This database exposes two tables:
- * - `entries` for diary content keyed by date
- * - `settings` for user preferences
- */
-
-export interface DiaryEntry {
-  date: string;
+export interface Entry {
   text: string;
   photos: string[];
   mood: string;
 }
 
-export interface Settings {
-  id: number;
-  theme: string;
+export interface State {
+  theme: 'light' | 'dark';
   fontSize: number;
+  entries: Record<string, Entry>;
 }
 
-export class TravelDiaryDB extends Dexie {
-  entries!: Table<DiaryEntry, string>;
-  settings!: Table<Settings, number>;
+const STORAGE_KEY = 'travel-diary-v1';
 
-  constructor() {
-    super('travelDiary');
-    this.version(1).stores({
-      entries: '&date, text, photos, mood',
-      settings: 'id, theme, fontSize',
-    });
+export async function getState(): Promise<State | null> {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw) as State;
+  } catch (e) {
+    console.error('getState error', e);
+    return null;
   }
 }
 
-export const db = new TravelDiaryDB();
+export async function putState(state: State): Promise<void> {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  } catch (e) {
+    console.error('putState error', e);
+  }
+}
