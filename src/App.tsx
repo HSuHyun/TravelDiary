@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 // Travel Diary – minimal offline-first web app (MVP)
 // -------------------------------------------------
@@ -96,15 +96,12 @@ export default function App() {
     const onKey = (e) => {
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "s") {
         e.preventDefault();
-        saveState(state);
-        // simple flash
-        const el = document.getElementById("save-toast");
-        if (el) { el.classList.remove('hidden'); setTimeout(() => el.classList.add('hidden'), 800); }
+        saveNow();
       }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [state]);
+  }, [saveNow]);
 
   const dates = useMemo(() => Object.keys(state.entries).sort((a, b) => (a < b ? 1 : -1)), [state.entries]);
 
@@ -134,6 +131,24 @@ export default function App() {
     const next = [...(entry.photos || [])];
     next.splice(idx, 1);
     setEntry({ photos: next });
+  };
+
+  const saveNow = useCallback(() => {
+    saveState(state);
+    const el = document.getElementById("save-toast");
+    if (el) {
+      el.classList.remove("hidden");
+      setTimeout(() => el.classList.add("hidden"), 800);
+    }
+  }, [state]);
+
+  const deleteEntry = () => {
+    if (!window.confirm("이 일기를 삭제할까요?")) return;
+    const entries = { ...state.entries };
+    delete entries[selectedDate];
+    setState({ ...state, entries });
+    const remaining = Object.keys(entries);
+    setSelectedDate(remaining[0] || formatDateISO());
   };
 
   const exportJSON = () => {
@@ -253,31 +268,48 @@ export default function App() {
             <div className="text-lg font-semibold flex items-center gap-2">
               {selectedDate} 기록 <span>{entry.mood}</span>
             </div>
-            <div id="save-toast" className="hidden text-xs px-2 py-1 rounded bg-emerald-500 text-white">저장됨</div>
+            <div className="flex items-center gap-2">
+              <div id="save-toast" className="hidden text-xs px-2 py-1 rounded bg-emerald-500 text-white">저장됨</div>
+              <button
+                onClick={deleteEntry}
+                className="px-2 py-1 rounded-lg hover:bg-zinc-200 dark:hover:bg-zinc-800"
+                title="삭제"
+              >
+                ✕
+              </button>
+            </div>
           </div>
 
-          <div className="flex items-center gap-2 mb-3">
-            {['😀', '😐', '😢', '😡'].map((m) => (
-              <button
-                key={m}
-                onClick={() => setEntry({ mood: m })}
-                className={classNames(
-                  'px-2 py-1 rounded-xl text-xl',
-                  entry.mood === m
-                    ? 'bg-emerald-200 dark:bg-emerald-800'
-                    : 'bg-zinc-200 hover:bg-zinc-300 dark:bg-zinc-800 dark:hover:bg-zinc-700'
-                )}
-              >
-                {m}
-              </button>
-            ))}
-            <input
-              type="text"
-              value={entry.mood || ''}
-              onChange={(e) => setEntry({ mood: e.target.value })}
-              placeholder="🙂"
-              className="w-12 text-center rounded-xl px-2 py-1 bg-zinc-100 dark:bg-zinc-800"
-            />
+          <div className="flex items-center justify-between gap-2 mb-3">
+            <div className="flex items-center gap-2">
+              {['😀', '😐', '😢', '😡'].map((m) => (
+                <button
+                  key={m}
+                  onClick={() => setEntry({ mood: m })}
+                  className={classNames(
+                    'px-2 py-1 rounded-xl text-xl',
+                    entry.mood === m
+                      ? 'bg-emerald-200 dark:bg-emerald-800'
+                      : 'bg-zinc-200 hover:bg-zinc-300 dark:bg-zinc-800 dark:hover:bg-zinc-700'
+                  )}
+                >
+                  {m}
+                </button>
+              ))}
+              <input
+                type="text"
+                value={entry.mood || ''}
+                onChange={(e) => setEntry({ mood: e.target.value })}
+                placeholder="🙂"
+                className="w-12 text-center rounded-xl px-2 py-1 bg-zinc-100 dark:bg-zinc-800"
+              />
+            </div>
+            <button
+              onClick={saveNow}
+              className="px-3 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white"
+            >
+              저장
+            </button>
           </div>
 
           <textarea
