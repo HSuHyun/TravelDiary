@@ -67,3 +67,10 @@ export default tseslint.config([
   },
 ])
 ```
+
+## Migration
+
+On first launch the app checks for legacy data stored under the `travel-diary-v1`
+localStorage key. If no records exist in Dexie yet, that data is imported into
+IndexedDB and the old localStorage entry is removed to ensure the migration runs
+only once.
