@@ -30,3 +30,22 @@ export async function putState(state: State): Promise<void> {
     console.error('putState error', e);
   }
 }
+
+// Entry-level helpers
+export async function addOrUpdateEntry(date: string, entry: Entry): Promise<void> {
+  const state = (await getState()) ?? { theme: 'light', fontSize: 16, entries: {} };
+  state.entries[date] = entry;
+  await putState(state);
+}
+
+export async function deleteEntry(date: string): Promise<void> {
+  const state = await getState();
+  if (!state) return;
+  delete state.entries[date];
+  await putState(state);
+}
+
+export async function getAllEntries(): Promise<Record<string, Entry>> {
+  const state = await getState();
+  return state?.entries ?? {};
+}
