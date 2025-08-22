@@ -51,19 +51,25 @@ function classNames(...xs) {
 //     [date: string]: {
 //       text: string,
 //       photos: string[] // dataURL
+//       mood: string
 //     }
 //   }
 // }
 
 export default function App() {
   const initial = useMemo(() => {
-    return (
-      loadState() || {
-        theme: window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light',
-        fontSize: defaultFontSize,
-        entries: { [formatDateISO()]: { text: "", photos: [] } },
-      }
-    );
+    const loaded = loadState();
+    if (loaded) {
+      const entries = Object.fromEntries(
+        Object.entries(loaded.entries || {}).map(([d, e]) => [d, { text: "", photos: [], mood: "😐", ...e }])
+      );
+      return { ...loaded, entries };
+    }
+    return {
+      theme: window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light',
+      fontSize: defaultFontSize,
+      entries: { [formatDateISO()]: { text: "", photos: [], mood: "😐" } },
+    };
   }, []);
 
   const [state, setState] = useState(initial);
@@ -75,7 +81,7 @@ export default function App() {
   useEffect(() => {
     setState((s) => {
       if (s.entries[selectedDate]) return s;
-      return { ...s, entries: { ...s.entries, [selectedDate]: { text: "", photos: [] } } };
+      return { ...s, entries: { ...s.entries, [selectedDate]: { text: "", photos: [], mood: "😐" } } };
     });
   }, [selectedDate]);
 
@@ -111,7 +117,7 @@ export default function App() {
     });
   }, [dates, query, state.entries]);
 
-  const entry = state.entries[selectedDate] || { text: "", photos: [] };
+  const entry = { text: "", photos: [], mood: "😐", ...(state.entries[selectedDate] || {}) };
 
   const setEntry = (upd) => {
     setState((s) => ({ ...s, entries: { ...s.entries, [selectedDate]: { ...entry, ...upd } } }));
@@ -146,8 +152,11 @@ export default function App() {
       const text = await file.text();
       const data = JSON.parse(text);
       if (!data.entries) throw new Error("Invalid file");
-      setState(data);
-      setSelectedDate(Object.keys(data.entries)[0] || formatDateISO());
+      const entries = Object.fromEntries(
+        Object.entries(data.entries).map(([d, e]) => [d, { text: "", photos: [], mood: "😐", ...e }])
+      );
+      setState({ ...data, entries });
+      setSelectedDate(Object.keys(entries)[0] || formatDateISO());
     } catch (e) {
       alert("가져오기 실패: " + e.message);
     }
@@ -216,7 +225,9 @@ export default function App() {
             )}
             {filteredDates.map((d) => {
               const isActive = d === selectedDate;
-              const snippet = (state.entries[d]?.text || "").slice(0, 50);
+              const e = state.entries[d] || {};
+              const snippet = (e.text || "").slice(0, 50);
+              const mood = e.mood || "😐";
               return (
                 <button key={d}
                   onClick={() => setSelectedDate(d)}
@@ -225,7 +236,10 @@ export default function App() {
                     isActive ? "bg-emerald-100 dark:bg-emerald-900/40" : "hover:bg-zinc-100 dark:hover:bg-zinc-800"
                   )}
                 >
-                  <div className="text-sm font-semibold">{d}</div>
+                  <div className="text-sm font-semibold flex items-center justify-between">
+                    <span>{d}</span>
+                    <span>{mood}</span>
+                  </div>
                   <div className="text-xs text-zinc-500 line-clamp-1">{snippet || "(빈 내용)"}</div>
                 </button>
               );
@@ -236,8 +250,34 @@ export default function App() {
         {/* Editor */}
         <main className="rounded-2xl p-4 bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800">
           <div className="flex items-center justify-between gap-2 mb-3">
-            <div className="text-lg font-semibold">{selectedDate} 기록</div>
+            <div className="text-lg font-semibold flex items-center gap-2">
+              {selectedDate} 기록 <span>{entry.mood}</span>
+            </div>
             <div id="save-toast" className="hidden text-xs px-2 py-1 rounded bg-emerald-500 text-white">저장됨</div>
+          </div>
+
+          <div className="flex items-center gap-2 mb-3">
+            {['😀', '😐', '😢', '😡'].map((m) => (
+              <button
+                key={m}
+                onClick={() => setEntry({ mood: m })}
+                className={classNames(
+                  'px-2 py-1 rounded-xl text-xl',
+                  entry.mood === m
+                    ? 'bg-emerald-200 dark:bg-emerald-800'
+                    : 'bg-zinc-200 hover:bg-zinc-300 dark:bg-zinc-800 dark:hover:bg-zinc-700'
+                )}
+              >
+                {m}
+              </button>
+            ))}
+            <input
+              type="text"
+              value={entry.mood || ''}
+              onChange={(e) => setEntry({ mood: e.target.value })}
+              placeholder="🙂"
+              className="w-12 text-center rounded-xl px-2 py-1 bg-zinc-100 dark:bg-zinc-800"
+            />
           </div>
 
           <textarea
