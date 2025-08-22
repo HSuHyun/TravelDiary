@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { getState, putState, type Entry, type State } from "./db";
 
 // Travel Diary – minimal offline-first web app (MVP)
 // -------------------------------------------------
@@ -11,39 +12,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 // TODO: IndexedDB, PWA, 동기화, Markdown, 지도, 감정 태그 등 확장
 
 // ----- Utilities -----
-const STORAGE_KEY = "travel-diary-v1";
 const defaultFontSize = 16;
-
-interface Entry {
-  text: string;
-  photos: string[];
-  mood: string;
-}
-
-interface State {
-  theme: "light" | "dark";
-  fontSize: number;
-  entries: Record<string, Entry>;
-}
-
-function loadState(): State | null {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return null;
-    return JSON.parse(raw) as State;
-  } catch (e) {
-    console.error("loadState error", e);
-    return null;
-  }
-}
-
-function saveState(state: State): void {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-  } catch (e) {
-    console.error("saveState error", e);
-  }
-}
 
 function formatDateISO(d: Date = new Date()): string {
   const tzOffset = d.getTimezoneOffset();
@@ -56,45 +25,60 @@ function classNames(...xs: (string | undefined | null | false)[]): string {
 }
 
 export default function App(): JSX.Element {
-  const initial = useMemo<State>(() => {
-  const loaded = loadState();
-  if (loaded?.entries) {
-    const entries = Object.fromEntries(
-      Object.entries(loaded.entries).map(([d, e]) => {
-        const base: Entry = { text: "", photos: [], mood: "😐" };
-        return [d, { ...base, ...(e as Partial<Entry>) }];
-      })
-    ) as Record<string, Entry>;
-    return { ...loaded, entries };
-  }
-  return {
-    theme: window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light',
+  const fallback: State = {
+    theme:
+      window.matchMedia &&
+      window.matchMedia("(prefers-color-scheme: dark)").matches
+        ? "dark"
+        : "light",
     fontSize: defaultFontSize,
     entries: { [formatDateISO()]: { text: "", photos: [], mood: "😐" } },
   };
-}, []);
 
-  const [state, setState] = useState<State>(initial);
+  const [state, setState] = useState<State>(fallback);
   const [selectedDate, setSelectedDate] = useState<string>(formatDateISO());
   const [query, setQuery] = useState<string>("");
   const textRef = useRef<HTMLTextAreaElement | null>(null);
+
+  useEffect(() => {
+    (async () => {
+      const loaded = await getState();
+      if (loaded?.entries) {
+        const entries = Object.fromEntries(
+          Object.entries(loaded.entries).map(([d, e]) => {
+            const base: Entry = { text: "", photos: [], mood: "😐" };
+            return [d, { ...base, ...(e as Partial<Entry>) }];
+          })
+        ) as Record<string, Entry>;
+        setState({ ...loaded, entries });
+      }
+    })();
+  }, []);
 
   // Ensure selected date entry exists
   useEffect(() => {
     setState((s) => {
       if (s.entries[selectedDate]) return s;
-      return { ...s, entries: { ...s.entries, [selectedDate]: { text: "", photos: [], mood: "😐" } } };
+      return {
+        ...s,
+        entries: {
+          ...s.entries,
+          [selectedDate]: { text: "", photos: [], mood: "😐" },
+        },
+      };
     });
   }, [selectedDate]);
 
   // Autosave (debounced)
   useEffect(() => {
-    const id = setTimeout(() => saveState(state), 400);
+    const id = setTimeout(async () => {
+      await putState(state);
+    }, 400);
     return () => clearTimeout(id);
   }, [state]);
 
-  const saveNow = useCallback(() => {
-    saveState(state);
+  const saveNow = useCallback(async () => {
+    await putState(state);
     const el = document.getElementById("save-toast");
     if (el) {
       el.classList.remove("hidden");
@@ -107,7 +91,7 @@ export default function App(): JSX.Element {
     const onKey = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "s") {
         e.preventDefault();
-        saveNow();
+        void saveNow();
       }
     };
     window.addEventListener("keydown", onKey);
