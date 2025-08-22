@@ -115,14 +115,12 @@ export default function App(): JSX.Element {
     return { text: "", photos: [], mood: "😐", ...(e ?? {}) };
   }, [state.entries, selectedDate]);
 
-  const setEntry = async (upd: Partial<Entry>) => {
+  const setEntry = (upd: Partial<Entry>) => {
     const nextEntry = { ...entry, ...upd };
-    try {
-      await addOrUpdateEntry(selectedDate, nextEntry);
-      setState((s) => ({ ...s, entries: { ...s.entries, [selectedDate]: nextEntry } }));
-    } catch (e) {
+    setState((s) => ({ ...s, entries: { ...s.entries, [selectedDate]: nextEntry } }));
+    void addOrUpdateEntry(selectedDate, nextEntry).catch((e) => {
       console.error('setEntry failed', e);
-    }
+    });
   };
 
   const handleAddPhoto = async (files: FileList | null) => {
