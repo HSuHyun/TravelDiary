@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { migrateLegacyData } from "./db.ts";
 
 // Travel Diary – minimal offline-first web app (MVP)
 // -------------------------------------------------
@@ -78,6 +79,11 @@ export default function App(): JSX.Element {
   const [selectedDate, setSelectedDate] = useState<string>(formatDateISO());
   const [query, setQuery] = useState<string>("");
   const textRef = useRef<HTMLTextAreaElement | null>(null);
+
+  // One-time migration from localStorage to Dexie
+  useEffect(() => {
+    migrateLegacyData();
+  }, []);
 
   // Ensure selected date entry exists
   useEffect(() => {
