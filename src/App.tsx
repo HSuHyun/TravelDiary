@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { addOrUpdateEntry, deleteEntry as dbDeleteEntry, Entry } from "./db";
 
 // Travel Diary – minimal offline-first web app (MVP)
 // -------------------------------------------------
@@ -14,11 +15,6 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 const STORAGE_KEY = "travel-diary-v1";
 const defaultFontSize = 16;
 
-interface Entry {
-  text: string;
-  photos: string[];
-  mood: string;
-}
 
 interface State {
   theme: "light" | "dark";
@@ -130,30 +126,41 @@ export default function App(): JSX.Element {
     return { text: "", photos: [], mood: "😐", ...(e ?? {}) };
   }, [state.entries, selectedDate]);
 
-  const setEntry = (upd: Partial<Entry>) => {
-    setState((s) => ({ ...s, entries: { ...s.entries, [selectedDate]: { ...entry, ...upd } } }));
+  const setEntry = async (upd: Partial<Entry>) => {
+    const next = { ...entry, ...upd };
+    try {
+      await addOrUpdateEntry(selectedDate, next);
+      setState((s) => ({ ...s, entries: { ...s.entries, [selectedDate]: next } }));
+    } catch (e) {
+      console.error("Failed to save entry", e);
+    }
   };
 
   const handleAddPhoto = async (files: FileList | null) => {
     if (!files || !files.length) return;
     const list = Array.from(files);
     const dataURLs = await Promise.all(list.map(fileToDataURL));
-    setEntry({ photos: [...(entry.photos || []), ...dataURLs] });
+    await setEntry({ photos: [...(entry.photos || []), ...dataURLs] });
   };
 
-  const removePhoto = (idx: number) => {
+  const removePhoto = async (idx: number) => {
     const next = [...(entry.photos || [])];
     next.splice(idx, 1);
-    setEntry({ photos: next });
+    await setEntry({ photos: next });
   };
 
-  const deleteEntry = () => {
+  const deleteEntry = async () => {
     if (!window.confirm("이 일기를 삭제할까요?")) return;
-    const entries = { ...state.entries };
-    delete entries[selectedDate];
-    setState({ ...state, entries });
-    const remaining = Object.keys(entries);
-    setSelectedDate(remaining[0] || formatDateISO());
+    try {
+      await dbDeleteEntry(selectedDate);
+      const entries = { ...state.entries };
+      delete entries[selectedDate];
+      setState({ ...state, entries });
+      const remaining = Object.keys(entries);
+      setSelectedDate(remaining[0] || formatDateISO());
+    } catch (e) {
+      console.error("Failed to delete entry", e);
+    }
   };
 
   const exportJSON = () => {
