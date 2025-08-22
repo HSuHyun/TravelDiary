@@ -196,12 +196,12 @@ export default function App(): JSX.Element {
     document.documentElement.classList.toggle('dark', state.theme === 'dark');
   }, [state.theme]);
 
-  return (
-    <div className={classNames("min-h-screen", "bg-zinc-50 text-zinc-900", "dark:bg-zinc-900 dark:text-zinc-100")}
+  return (<div
+  className="min-h-screen overflow-x-hidden bg-zinc-50 text-zinc-900 dark:bg-zinc-900 dark:text-zinc-100"
       style={{ fontSize: state.fontSize }}>
       {/* Top Bar */}
       <div className="sticky top-0 z-10 backdrop-blur supports-[backdrop-filter]:bg-white/60 dark:supports-[backdrop-filter]:bg-zinc-900/60 border-b border-zinc-200 dark:border-zinc-800">
-        <div className="max-w-6xl mx-auto px-4 py-3 flex items-center gap-2">
+        <div className="max-w-6xl mx-auto px-4 py-3 flex flex-wrap items-center gap-2">
           <h1 className="text-xl font-bold mr-auto">✈️ Travel Diary</h1>
 
           <input
@@ -229,7 +229,7 @@ export default function App(): JSX.Element {
       {/* Body */}
       <div className="max-w-6xl mx-auto grid md:grid-cols-[260px_1fr] gap-4 p-4">
         {/* Sidebar: Dates */}
-        <aside className="rounded-2xl p-3 bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800">
+        <aside className="w-full min-w-0 rounded-2xl p-3 bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800">
           <div className="flex items-center gap-2 mb-3">
             <input
               type="date"
@@ -273,7 +273,7 @@ export default function App(): JSX.Element {
         </aside>
 
         {/* Editor */}
-        <main className="rounded-2xl p-4 bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800">
+        <main className="w-full min-w-0 rounded-2xl p-4 bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800">
           <div className="flex items-center justify-between gap-2 mb-3">
             <div className="text-lg font-semibold flex items-center gap-2">
               {selectedDate} 기록 <span>{entry.mood}</span>
