@@ -152,8 +152,10 @@ export default function App(): JSX.Element {
     }
   };
 
-  const exportJSON = () => {
-    const blob = new Blob([JSON.stringify(state, null, 2)], { type: "application/json" });
+  const exportJSON = async () => {
+    const dbState = await getState();
+    const data = dbState ?? state;
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
@@ -174,8 +176,12 @@ export default function App(): JSX.Element {
           return [d, { ...base, ...(e as Partial<Entry>) }];
         })
       ) as Record<string, Entry>;
-      setState({ ...data, entries });
-      setSelectedDate(Object.keys(entries)[0] || formatDateISO());
+      await putState({ ...data, entries });
+      const fresh = await getState();
+      if (fresh) {
+        setState(fresh);
+        setSelectedDate(Object.keys(fresh.entries)[0] || formatDateISO());
+      }
     } catch (e: any) {
       alert("가져오기 실패: " + e.message);
     }
@@ -212,10 +218,10 @@ export default function App(): JSX.Element {
             <button onClick={incFont} className="px-3 py-2 hover:bg-zinc-300 dark:hover:bg-zinc-700">A＋</button>
           </div>
 
-          <button onClick={exportJSON} className="ml-2 px-3 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white">내보내기</button>
+          <button onClick={() => void exportJSON()} className="ml-2 px-3 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white">내보내기</button>
           <label className="ml-2 px-3 py-2 rounded-xl bg-zinc-200 hover:bg-zinc-300 dark:bg-zinc-800 dark:hover:bg-zinc-700 cursor-pointer">
             가져오기
-            <input type="file" accept="application/json" className="hidden" onChange={(e) => importJSON(e.target.files?.[0])} />
+            <input type="file" accept="application/json" className="hidden" onChange={(e) => void importJSON(e.target.files?.[0])} />
           </label>
         </div>
       </div>
