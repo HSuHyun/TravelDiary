@@ -1,5 +1,12 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { getState, putState, type Entry, type State } from "./db";
+import {
+  getState,
+  putState,
+  addOrUpdateEntry,
+  deleteEntry as deleteEntryFromDB,
+  type Entry,
+  type State,
+} from "./db";
 
 // Travel Diary – minimal offline-first web app (MVP)
 // -------------------------------------------------
@@ -108,8 +115,14 @@ export default function App(): JSX.Element {
     return { text: "", photos: [], mood: "😐", ...(e ?? {}) };
   }, [state.entries, selectedDate]);
 
-  const setEntry = (upd: Partial<Entry>) => {
-    setState((s) => ({ ...s, entries: { ...s.entries, [selectedDate]: { ...entry, ...upd } } }));
+  const setEntry = async (upd: Partial<Entry>) => {
+    const nextEntry = { ...entry, ...upd };
+    try {
+      await addOrUpdateEntry(selectedDate, nextEntry);
+      setState((s) => ({ ...s, entries: { ...s.entries, [selectedDate]: nextEntry } }));
+    } catch (e) {
+      console.error('setEntry failed', e);
+    }
   };
 
   const handleAddPhoto = async (files: FileList | null) => {
@@ -125,13 +138,18 @@ export default function App(): JSX.Element {
     setEntry({ photos: next });
   };
 
-  const deleteEntry = () => {
+  const deleteEntry = async () => {
     if (!window.confirm("이 일기를 삭제할까요?")) return;
-    const entries = { ...state.entries };
-    delete entries[selectedDate];
-    setState({ ...state, entries });
-    const remaining = Object.keys(entries);
-    setSelectedDate(remaining[0] || formatDateISO());
+    try {
+      await deleteEntryFromDB(selectedDate);
+      const entries = { ...state.entries };
+      delete entries[selectedDate];
+      setState({ ...state, entries });
+      const remaining = Object.keys(entries);
+      setSelectedDate(remaining[0] || formatDateISO());
+    } catch (e) {
+      console.error('deleteEntry failed', e);
+    }
   };
 
   const exportJSON = () => {
