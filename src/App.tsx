@@ -57,19 +57,22 @@ function classNames(...xs: (string | undefined | null | false)[]): string {
 
 export default function App(): JSX.Element {
   const initial = useMemo<State>(() => {
-    const loaded = loadState();
-    if (loaded) {
-      const entries = Object.fromEntries(
-        Object.entries(loaded.entries || {}).map(([d, e]) => [d, { text: "", photos: [], mood: "😐", ...e }])
-      );
-      return { ...loaded, entries };
-    }
-    return {
-      theme: window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light',
-      fontSize: defaultFontSize,
-      entries: { [formatDateISO()]: { text: "", photos: [], mood: "😐" } },
-    };
-  }, []);
+  const loaded = loadState();
+  if (loaded?.entries) {
+    const entries = Object.fromEntries(
+      Object.entries(loaded.entries).map(([d, e]) => {
+        const base: Entry = { text: "", photos: [], mood: "😐" };
+        return [d, { ...base, ...(e as Partial<Entry>) }];
+      })
+    ) as Record<string, Entry>;
+    return { ...loaded, entries };
+  }
+  return {
+    theme: window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light',
+    fontSize: defaultFontSize,
+    entries: { [formatDateISO()]: { text: "", photos: [], mood: "😐" } },
+  };
+}, []);
 
   const [state, setState] = useState<State>(initial);
   const [selectedDate, setSelectedDate] = useState<string>(formatDateISO());
@@ -88,6 +91,15 @@ export default function App(): JSX.Element {
   useEffect(() => {
     const id = setTimeout(() => saveState(state), 400);
     return () => clearTimeout(id);
+  }, [state]);
+
+  const saveNow = useCallback(() => {
+    saveState(state);
+    const el = document.getElementById("save-toast");
+    if (el) {
+      el.classList.remove("hidden");
+      setTimeout(() => el.classList.add("hidden"), 800);
+    }
   }, [state]);
 
   // Keyboard: Cmd/Ctrl+S to force save
@@ -113,7 +125,10 @@ export default function App(): JSX.Element {
     });
   }, [dates, query, state.entries]);
 
-  const entry: Entry = { text: "", photos: [], mood: "😐", ...(state.entries[selectedDate] || {}) };
+  const entry = useMemo<Entry>(() => {
+    const e = state.entries[selectedDate] as Partial<Entry> | undefined;
+    return { text: "", photos: [], mood: "😐", ...(e ?? {}) };
+  }, [state.entries, selectedDate]);
 
   const setEntry = (upd: Partial<Entry>) => {
     setState((s) => ({ ...s, entries: { ...s.entries, [selectedDate]: { ...entry, ...upd } } }));
@@ -132,15 +147,6 @@ export default function App(): JSX.Element {
     setEntry({ photos: next });
   };
 
-  const saveNow = useCallback(() => {
-    saveState(state);
-    const el = document.getElementById("save-toast");
-    if (el) {
-      el.classList.remove("hidden");
-      setTimeout(() => el.classList.add("hidden"), 800);
-    }
-  }, [state]);
-
   const deleteEntry = () => {
     if (!window.confirm("이 일기를 삭제할까요?")) return;
     const entries = { ...state.entries };
@@ -155,7 +161,7 @@ export default function App(): JSX.Element {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `travel-diary-${new Date().toISOString().slice(0,10)}.json`;
+    a.download = `travel-diary-${new Date().toISOString().slice(0, 10)}.json`;
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -167,8 +173,11 @@ export default function App(): JSX.Element {
       const data = JSON.parse(text) as State;
       if (!data.entries) throw new Error("Invalid file");
       const entries = Object.fromEntries(
-        Object.entries(data.entries).map(([d, e]) => [d, { text: "", photos: [], mood: "😐", ...e }])
-      );
+        Object.entries(data.entries).map(([d, e]) => {
+          const base: Entry = { text: "", photos: [], mood: "😐" };
+          return [d, { ...base, ...(e as Partial<Entry>) }];
+        })
+      ) as Record<string, Entry>;
       setState({ ...data, entries });
       setSelectedDate(Object.keys(entries)[0] || formatDateISO());
     } catch (e: any) {
@@ -187,7 +196,7 @@ export default function App(): JSX.Element {
 
   return (
     <div className={classNames("min-h-screen", "bg-zinc-50 text-zinc-900", "dark:bg-zinc-900 dark:text-zinc-100")}
-         style={{ fontSize: state.fontSize }}>
+      style={{ fontSize: state.fontSize }}>
       {/* Top Bar */}
       <div className="sticky top-0 z-10 backdrop-blur supports-[backdrop-filter]:bg-white/60 dark:supports-[backdrop-filter]:bg-zinc-900/60 border-b border-zinc-200 dark:border-zinc-800">
         <div className="max-w-6xl mx-auto px-4 py-3 flex items-center gap-2">

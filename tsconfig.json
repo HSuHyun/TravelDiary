@@ -3,5 +3,9 @@
   "references": [
     { "path": "./tsconfig.app.json" },
     { "path": "./tsconfig.node.json" }
-  ]
+  ],
+  "compilerOptions": {
+    "jsx": "react-jsx",      // 또는 react-jsxdev (개발용)
+    "types": ["vite/client"] // Vite 프로젝트라면 이거 추가
+  }
 }
