@@ -14,18 +14,30 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 const STORAGE_KEY = "travel-diary-v1";
 const defaultFontSize = 16;
 
-function loadState() {
+interface Entry {
+  text: string;
+  photos: string[];
+  mood: string;
+}
+
+interface State {
+  theme: "light" | "dark";
+  fontSize: number;
+  entries: Record<string, Entry>;
+}
+
+function loadState(): State | null {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return null;
-    return JSON.parse(raw);
+    return JSON.parse(raw) as State;
   } catch (e) {
     console.error("loadState error", e);
     return null;
   }
 }
 
-function saveState(state) {
+function saveState(state: State): void {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
   } catch (e) {
@@ -33,31 +45,18 @@ function saveState(state) {
   }
 }
 
-function formatDateISO(d = new Date()) {
+function formatDateISO(d: Date = new Date()): string {
   const tzOffset = d.getTimezoneOffset();
   const local = new Date(d.getTime() - tzOffset * 60000);
   return local.toISOString().slice(0, 10); // YYYY-MM-DD
 }
 
-function classNames(...xs) {
+function classNames(...xs: (string | undefined | null | false)[]): string {
   return xs.filter(Boolean).join(" ");
 }
 
-// ----- Types -----
-// state = {
-//   theme: "light" | "dark",
-//   fontSize: number,
-//   entries: {
-//     [date: string]: {
-//       text: string,
-//       photos: string[] // dataURL
-//       mood: string
-//     }
-//   }
-// }
-
-export default function App() {
-  const initial = useMemo(() => {
+export default function App(): JSX.Element {
+  const initial = useMemo<State>(() => {
     const loaded = loadState();
     if (loaded) {
       const entries = Object.fromEntries(
@@ -72,10 +71,10 @@ export default function App() {
     };
   }, []);
 
-  const [state, setState] = useState(initial);
-  const [selectedDate, setSelectedDate] = useState(formatDateISO());
-  const [query, setQuery] = useState("");
-  const textRef = useRef(null);
+  const [state, setState] = useState<State>(initial);
+  const [selectedDate, setSelectedDate] = useState<string>(formatDateISO());
+  const [query, setQuery] = useState<string>("");
+  const textRef = useRef<HTMLTextAreaElement | null>(null);
 
   // Ensure selected date entry exists
   useEffect(() => {
@@ -93,7 +92,7 @@ export default function App() {
 
   // Keyboard: Cmd/Ctrl+S to force save
   useEffect(() => {
-    const onKey = (e) => {
+    const onKey = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "s") {
         e.preventDefault();
         saveNow();
@@ -114,20 +113,20 @@ export default function App() {
     });
   }, [dates, query, state.entries]);
 
-  const entry = { text: "", photos: [], mood: "😐", ...(state.entries[selectedDate] || {}) };
+  const entry: Entry = { text: "", photos: [], mood: "😐", ...(state.entries[selectedDate] || {}) };
 
-  const setEntry = (upd) => {
+  const setEntry = (upd: Partial<Entry>) => {
     setState((s) => ({ ...s, entries: { ...s.entries, [selectedDate]: { ...entry, ...upd } } }));
   };
 
-  const handleAddPhoto = async (files) => {
+  const handleAddPhoto = async (files: FileList | null) => {
     if (!files || !files.length) return;
     const list = Array.from(files);
     const dataURLs = await Promise.all(list.map(fileToDataURL));
     setEntry({ photos: [...(entry.photos || []), ...dataURLs] });
   };
 
-  const removePhoto = (idx) => {
+  const removePhoto = (idx: number) => {
     const next = [...(entry.photos || [])];
     next.splice(idx, 1);
     setEntry({ photos: next });
@@ -161,18 +160,18 @@ export default function App() {
     URL.revokeObjectURL(url);
   };
 
-  const importJSON = async (file) => {
+  const importJSON = async (file: File | undefined) => {
     if (!file) return;
     try {
       const text = await file.text();
-      const data = JSON.parse(text);
+      const data = JSON.parse(text) as State;
       if (!data.entries) throw new Error("Invalid file");
       const entries = Object.fromEntries(
         Object.entries(data.entries).map(([d, e]) => [d, { text: "", photos: [], mood: "😐", ...e }])
       );
       setState({ ...data, entries });
       setSelectedDate(Object.keys(entries)[0] || formatDateISO());
-    } catch (e) {
+    } catch (e: any) {
       alert("가져오기 실패: " + e.message);
     }
   };
@@ -357,10 +356,10 @@ export default function App() {
   );
 }
 
-async function fileToDataURL(file) {
+async function fileToDataURL(file: File): Promise<string> {
   return new Promise((res, rej) => {
     const reader = new FileReader();
-    reader.onload = () => res(reader.result);
+    reader.onload = () => res(reader.result as string);
     reader.onerror = rej;
     reader.readAsDataURL(file);
   });
