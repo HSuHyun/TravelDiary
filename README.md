@@ -67,3 +67,8 @@ export default tseslint.config([
   },
 ])
 ```
+
+## Migration
+
+On first launch after upgrading, the app migrates data from the legacy `travel-diary-v1` key in localStorage to a Dexie-powered IndexedDB database. After a successful migration the old key is removed so the process runs only once.
+
