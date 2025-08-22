@@ -1,5 +1,13 @@
 import Dexie, { type Table } from 'dexie';
 
+/**
+ * IndexedDB storage for the Travel Diary application.
+ *
+ * This database exposes two tables:
+ * - `entries` for diary content keyed by date
+ * - `settings` for user preferences
+ */
+
 export interface DiaryEntry {
   date: string;
   text: string;
