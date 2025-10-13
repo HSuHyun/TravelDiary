@@ -1,74 +1,93 @@
-# React + TypeScript + Vite
+# TravelDiary
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+> **나만의 여행 일기장 & 일정 관리 웹앱**  
+> 여행지, 일정, 메모, 사진을 한 곳에 기록하고 관리할 수 있는 **React 기반 다이어리 프로젝트**입니다.  
+> 여행 후기를 타임라인 형식으로 정리하며, 추억을 시각적으로 기록할 수 있습니다.
 
-Currently, two official plugins are available:
+---
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## 프로젝트 개요
 
-## Expanding the ESLint configuration
+| 항목 | 내용 |
+|------|------|
+| **개발 언어** | TypeScript |
+| **프레임워크** | React (Vite 기반) |
+| **UI 프레임워크** | TailwindCSS, Radix UI |
+| **상태 관리** | React Hooks / Context / LocalStorage |
+| **데이터 관리** | IndexedDB / LocalStorage (로컬 저장 기반) |
+| **목적** | 여행 일지 + 일정 관리 + 사진 첨부형 다이어리 |
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+---
 
-```js
-export default tseslint.config([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+## 주요 기능
 
-      // Remove tseslint.configs.recommended and replace with this
-      ...tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      ...tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      ...tseslint.configs.stylisticTypeChecked,
+| 기능 | 설명 |
+|------|------|
+| **여행 일정 등록** | 날짜별 일정/방문지 추가 |
+| **여행 메모** | 각 일정별 텍스트 메모 작성 |
+| **사진 첨부** | 여행 사진을 일기 형태로 기록 |
+| **로컬 데이터 저장** | 브라우저 LocalStorage/IndexedDB에 데이터 저장 |
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+---
+
+## 폴더 구조
+
+TravelDiary/  
+ ┣ dist/                     # 빌드 결과물 (Vite build output)  
+ ┣ node_modules/             # 의존성 패키지  
+ ┣ public/                   # 정적 리소스 (favicon, manifest 등)  
+ ┣ src/  
+ ┃ ┣ assets/                 # 이미지, 아이콘 등 정적 리소스  
+ ┃ ┣ App.css                 # 전역 스타일  
+ ┃ ┣ App.tsx                 # 루트 컴포넌트  
+ ┃ ┣ db.ts                   # 로컬 데이터베이스/스토리지 관련 로직  
+ ┃ ┣ index.css               # 글로벌 CSS 초기화  
+ ┃ ┣ main.tsx                # 엔트리 포인트 (React DOM 렌더링)  
+ ┃ ┗ vite-env.d.ts           # Vite 환경 타입 정의  
+ ┣ .gitattributes  
+ ┣ .gitignore  
+ ┣ eslint.config.js          # ESLint 설정  
+ ┣ index.html                # HTML 템플릿  
+ ┣ package.json              # 프로젝트 의존성 및 스크립트  
+ ┣ package-lock.json  
+ ┣ postcss.config.js         # PostCSS 설정  
+ ┣ tailwind.config.js        # TailwindCSS 설정  
+ ┣ tsconfig.json             # TypeScript 기본 설정  
+ ┣ tsconfig.app.json         # 애플리케이션용 TS 설정  
+ ┣ tsconfig.node.json        # Node 환경용 TS 설정  
+ ┗ vite.config.ts            # Vite 빌드 설정  
+
+---
+
+## 실행 방법
+
+```bash
+# 1. 프로젝트 클론
+git clone https://github.com/HSuHyun/TravelDiary.git
+
+# 2. 의존성 설치
+cd TravelDiary
+npm install
+
+# 3. 개발 서버 실행
+npm run dev
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+서버 실행 후:
+👉 http://localhost:5173
+ (기본 포트)
+ 
+---
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+## 향후 계획
 
-export default tseslint.config([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+- 클라우드 동기화 (Firebase / Supabase 연동)
+- 지도 API 연결 (Google Maps / Kakao Map)
+- 여행별 태그 & 필터 기능 강화
+- 일정 공유 (공개 링크 / PDF 내보내기)
+- 반응형 최적화 (모바일 전용 뷰)
 
-## Migration
+---
 
-On first launch after upgrading, the app migrates data from the legacy `travel-diary-v1` key in localStorage to a Dexie-powered IndexedDB database. After a successful migration the old key is removed so the process runs only once.
-
+## 개발자
+HSuHyun
