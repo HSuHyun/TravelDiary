@@ -89,5 +89,7 @@ npm run dev
 
 ---
 
-## 개발자
-HSuHyun
+## 👤 개발자
+
+**HSuHyun**  
+> [🔗 GitHub Profile](https://github.com/HSuHyun)
